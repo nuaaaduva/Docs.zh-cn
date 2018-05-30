@@ -1,5 +1,5 @@
 ---
-title: 帐户确认和 ASP.NET Core 中的密码恢复
+title: 帐户确认和 ASP.NET Core 中的密码重置
 author: rick-anderson
 description: 了解如何生成使用电子邮件确认及密码重置功能的 ASP.NET Core 应用程序。
 manager: wpickett
@@ -15,24 +15,24 @@ ms.translationtype: MT
 ms.contentlocale: zh-CN
 ms.lasthandoff: 05/12/2018
 ---
-# <a name="account-confirmation-and-password-recovery-in-aspnet-core"></a>帐户确认和 ASP.NET Core 中的密码恢复
+# <a name="account-confirmation-and-password-recovery-in-aspnet-core"></a>帐户确认和 ASP.NET Core 中的密码重置
 
 作者：[Rick Anderson](https://twitter.com/RickAndMSFT) 和 [Joe Audette](https://twitter.com/joeaudette)
 
-本教程演示了如何生成具有电子邮件确认及密码重置的 ASP.NET Core 应用。 本教程是**不**开头主题。 你应熟悉：
+本教程演示了如何生成具有电子邮件确认及密码重置的 ASP.NET Core 应用。 本教程是**不是**开头主题。 你应熟悉：
 
 * [ASP.NET Core](xref:tutorials/first-mvc-app/start-mvc)
 * [身份验证](xref:security/authentication/index)
-* [帐户确认和密码恢复](xref:security/authentication/accconfirm)
+* [帐户确认和密码重置](xref:security/authentication/accconfirm)
 * [Entity Framework Core](xref:data/ef-mvc/intro)
 
-请参阅[此 PDF 文件](https://github.com/aspnet/Docs/tree/master/aspnetcore/security/authorization/secure-data/asp.net_repo_pdf_1-16-18.pdf)的 ASP.NET 核心 MVC 1.1 和 2.x 版本。
+请参阅[此 PDF 文件](https://github.com/aspnet/Docs/tree/master/aspnetcore/security/authorization/secure-data/asp.net_repo_pdf_1-16-18.pdf)的 ASP.NET Core MVC 1.1 和 2.x 版本。
 
 ## <a name="prerequisites"></a>系统必备
 
 [!INCLUDE [](~/includes/net-core-prereqs.md)]
 
-## <a name="create-a-new-aspnet-core-project-with-the-net-core-cli"></a>使用.NET 核心 CLI 创建新的 ASP.NET Core 项目
+## <a name="create-a-new-aspnet-core-project-with-the-net-core-cli"></a>使用.NET Core CLI 创建新的 ASP.NET Core 项目
 
 # <a name="aspnet-core-2xtabaspnetcore2x"></a>[ASP.NET Core 2.x](#tab/aspnetcore2x)
 
@@ -42,7 +42,7 @@ cd WebPWrecover
 ```
 
 * `--auth Individual` 指定的单个用户帐户项目模板。
-* 在 Windows 上，添加`-uld`选项。 它指定应而不是 SQLite 使用 LocalDB。
+* 在 Windows 上，添加`-uld`选项。 它指定使用LocalDB而不是 SQLite  。
 * 运行`new mvc --help`以获取有关此命令帮助。
 
 # <a name="aspnet-core-1xtabaspnetcore1x"></a>[ASP.NET Core 1.x](#tab/aspnetcore1x)
@@ -62,15 +62,15 @@ dotnet new mvc --auth Individual
 或者，你可以使用 Visual Studio 创建新的 ASP.NET Core 项目：
 
 * 在 Visual Studio 中，创建一个新**Web 应用程序**项目。
-* 选择**ASP.NET Core 2.0**。 **.NET 核心**选择在下图中，但你可以选择 **.NET Framework**。
-* 选择**更改身份验证**并将设置为**单个用户帐户**。
+* 选择**ASP.NET Core 2.0**。 下图中的 **.NET Core** 已经选中，但你仍然可以选择 **.NET Framework**。
+* 选择**更改身份验证**并将设置为**个人用户帐户**。
 * 保留默认值**存储用户帐户在应用程序**。
 
 ![显示"单个用户帐户单选"所选的新建项目对话框](accconfirm/_static/2.png)
 
-## <a name="test-new-user-registration"></a>测试新的用户注册
+## <a name="test-new-user-registration"></a>测试用户注册功能
 
-运行应用程序中，选择**注册**链接，并注册用户。 按照运行实体框架核心迁移的说明。 此时，电子邮件的唯一验证是使用[[EmailAddress]](/dotnet/api/system.componentmodel.dataannotations.emailaddressattribute)属性。 提交注册之后, 你登录到应用程序。 更高版本在教程中，这样，直到其电子邮件已验证新的用户无法登录时将更新代码。
+运行应用程序中，选择**注册**链接，并注册用户。 按照EntityFrameWork Core 迁移的说明运行。 此时，电子邮件仅使用[[EmailAddress]]属性进行验证(/dotnet/api/system.componentmodel.dataannotations.emailaddressattribute)。 提交注册之后即成功登陆到程序之中。 之后的教程中，程序的代码将会更新，以实现在电子邮件验证之前阻止用户登录。
 
 ## <a name="view-the-identity-database"></a>查看标识数据库
 
@@ -79,53 +79,53 @@ dotnet new mvc --auth Individual
 Visual studio:
 
 * 从**视图**菜单上，选择**SQL Server 对象资源管理器**(SSOX)。
-* 导航到 **(localdb) MSSQLLocalDB (SQL Server 13)**。 右键单击**dbo。AspNetUsers** > **查看数据**:
+* 导航到 **(localdb) MSSQLLocalDB (SQL Server 13)**。 右键单击**dbo.AspNetUsers** > **查看数据**:
 
 ![在 AspNetUsers 表中 SQL Server 对象资源管理器的上下文菜单](accconfirm/_static/ssox.png)
 
-请注意表的`EmailConfirmed`字段是`False`。
+请注意表,`EmailConfirmed`字段的值为`False`。
 
-你可能想要再次在下一步中使用此电子邮件，当应用程序发送确认电子邮件。 右键单击行并选择**删除**。 删除的电子邮件别名便于您在以下步骤。
+你可能在系统发送确认邮件的步骤中需要此电子邮件地址。 右键单击行并选择**删除**， 以便于继续进行一下步骤。
 
 ---
 
-## <a name="require-https"></a>需要 HTTPS
+## <a name="require-https"></a> 使用 HTTPS
 
-请参阅[需要 HTTPS](xref:security/enforcing-ssl)。
+请参阅[使用 HTTPS](xref:security/enforcing-ssl)。
 
 <a name="prevent-login-at-registration"></a>
-## <a name="require-email-confirmation"></a>需要电子邮件确认
+## <a name="require-email-confirmation"></a>使用电子邮件确认
 
-它是一种最佳做法以确认新的用户注册的电子邮件。 电子邮件确认有助于验证它们不模拟其他人 （即，它们尚未注册与其他人的电子邮件）。 假设有论坛，并且你想阻止"yli@example.com"发件人将注册为"nolivetto@contoso.com。" 而无需电子邮件确认"nolivetto@contoso.com"无法接收来自您的应用程序不需要的电子邮件。 假设用户意外注册为"ylo@example.com"和未注意到"yli"的拼写错误。 它们将无法使用恢复密码，因为此应用程序没有正确的电子邮件。 电子邮件确认从机器人提供有限的保护。 电子邮件确认不免受恶意用户的多个电子邮件帐户与提供保护。
+这是认证新注册用户电子邮件的最佳方法。 电子邮件确认有助于验证新用户注册时不会模拟其他人 （即，使用尚未注册的其他人的电子邮件）。 假设有论坛，并且你想阻止"yli@example.com"的使用人将电子邮件注册为"nolivetto@contoso.com。" 若不使用电子邮件确认，"nolivetto@contoso.com"将接收到一些从你的程序发出的垃圾邮件。 假设用户意外注册为"ylo@example.com"且未注意到"yli"的拼写错误。 它们将无法使用密码重置功能，因为此应用程序没有保存正确的电子邮件地址。 电子邮件确认提供针对于自动注册机器人的有限保护，但并不能提供针对多邮件用户恶意注册的保护。
 
-你通常想要使不能在有确认电子邮件之前发布到网站的任何数据的新用户。
+通常，你需要阻止尚未确认电子邮件的新用户向网站上传任何数据。
 
-更新`ConfigureServices`需要确认电子邮件：
+更新`ConfigureServices`以使用电子邮件确认：
 
 [!code-csharp[](accconfirm/sample/WebPWrecover/Startup.cs?name=snippet1&highlight=12-17)]
 
-`config.SignIn.RequireConfirmedEmail = true;` 防止已注册的用户登录，直到其电子邮件进行确认。
+`config.SignIn.RequireConfirmedEmail = true;` 防止已注册的用户登录，直到其对电子邮件进行确认。
 
-### <a name="configure-email-provider"></a>配置电子邮件提供商
+### <a name="configure-email-provider"></a>配置电子邮件供应商
 
-在本教程中，使用 SendGrid 发送电子邮件。 你需要一个 SendGrid 帐户和密钥用于发送电子邮件。 你可以使用其他电子邮件提供商。 ASP.NET 核心 2.x 包括`System.Net.Mail`，这允许你从你的应用程序发送电子邮件。 我们建议你使用 SendGrid 或另一个电子邮件服务发送电子邮件。 SMTP 很难保护并正确设置。
+在本教程中将使用 SendGrid 发送电子邮件。 你需要一个 SendGrid 帐户和密钥用于发送电子邮件。 你可以使用其他电子邮件供应商。 ASP.NET Core 2.x 已经包含`System.Net.Mail`程序及，这允许你使用你的应用程序发送电子邮件。 我们建议你使用 SendGrid 或另一个电子邮件服务发送电子邮件。 SMTP 很难保证安全和正确设置。
 
-[选项模式](xref:fundamentals/configuration/options)用于访问的用户帐户和密钥设置。 有关详细信息，请参阅[配置](xref:fundamentals/configuration/index)。
+[选项模式](xref:fundamentals/configuration/options)用于接收用户帐户和密钥设置。 有关详细信息，请参阅[配置](xref:fundamentals/configuration/index)。
 
-创建一个类以提取安全的电子邮件密钥。 对于此示例，`AuthMessageSenderOptions`中创建类*Services/AuthMessageSenderOptions.cs*文件：
+创建一个类以提取安全的电子邮件密钥。 此示例中，*Services/AuthMessageSenderOptions.cs*文件创建`AuthMessageSenderOptions`类：
 
 [!code-csharp[](accconfirm/sample/WebPWrecover/Services/AuthMessageSenderOptions.cs?name=snippet1)]
 
-设置`SendGridUser`和`SendGridKey`与[机密管理器工具](xref:security/app-secrets)。 例如：
+设置`SendGridUser`、`SendGridKey`与[秘钥管理器工具](xref:security/app-secrets)。 例如：
 
 ```console
 C:\WebAppl\src\WebApp1>dotnet user-secrets set SendGridUser RickAndMSFT
 info: Successfully saved SendGridUser = RickAndMSFT to the secret store.
 ```
 
-在 Windows 上，密钥管理器存储中的键/值对*secrets.json*文件中`%APPDATA%/Microsoft/UserSecrets/<WebAppName-userSecretsId>`目录。
+对于 Windows 系统，密钥管理器存储键值对在`%APPDATA%/Microsoft/UserSecrets/<WebAppName-userSecretsId>`目录下的*secrets.json*文件中。
 
-内容*secrets.json*文件未加密。 *Secrets.json*文件如下所示 (`SendGridKey`值已删除。)
+*secrets.json*文件的内容未加密。 *Secrets.json*文件如下所示 (`SendGridKey`值已删除。)
 
  ```json
   {
@@ -134,9 +134,9 @@ info: Successfully saved SendGridUser = RickAndMSFT to the secret store.
   }
   ```
 
-### <a name="configure-startup-to-use-authmessagesenderoptions"></a>配置启动要使用 AuthMessageSenderOptions
+### <a name="configure-startup-to-use-authmessagesenderoptions"></a>配置Startup以使用 AuthMessageSenderOptions
 
-添加`AuthMessageSenderOptions`到末尾的服务容器`ConfigureServices`中的方法*Startup.cs*文件：
+将`AuthMessageSenderOptions`添加到`ConfigureServices`方法末尾的Service Container 中，该方法位于*Startup.cs*文件：
 
 # <a name="aspnet-core-2xtabaspnetcore2x"></a>[ASP.NET Core 2.x](#tab/aspnetcore2x/)
 
@@ -150,7 +150,7 @@ info: Successfully saved SendGridUser = RickAndMSFT to the secret store.
 
 ### <a name="configure-the-authmessagesender-class"></a>配置 AuthMessageSender 类
 
-本教程演示如何添加通过电子邮件通知[SendGrid](https://sendgrid.com/)，但是你可以发送电子邮件使用 SMTP 和其他机制。
+本教程演示如何通过[SendGrid](https://sendgrid.com/)发送电子邮件通知，但是使用SMTP或者其他机制来发送电子邮件。
 
 安装`SendGrid`NuGet 包：
 
@@ -162,57 +162,57 @@ info: Successfully saved SendGridUser = RickAndMSFT to the secret store.
 
   `Install-Package SendGrid`
 
-请参阅[免费开始使用 SendGrid](https://sendgrid.com/free/)注册一个免费的 SendGrid 帐户。
+请参阅[开始免费使用 SendGrid](https://sendgrid.com/free/)来注册一个免费的 SendGrid 帐户。
 
-#### <a name="configure-sendgrid"></a>配置了 SendGrid
+#### <a name="configure-sendgrid"></a>配置 SendGrid
 
 # <a name="aspnet-core-2xtabaspnetcore2x"></a>[ASP.NET Core 2.x](#tab/aspnetcore2x/)
 
-若要配置 SendGrid，添加类似于以下的代码*Services/EmailSender.cs*:
+若要配置 SendGrid，在*Services/EmailSender.cs*中添加类似于以下的代码:
 
 [!code-csharp[](accconfirm/sample/WebPWrecover/Services/EmailSender.cs)]
 
 # <a name="aspnet-core-1xtabaspnetcore1x"></a>[ASP.NET Core 1.x](#tab/aspnetcore1x/)
 
-* 中添加代码*Services/MessageServices.cs*类似于以下配置 SendGrid:
+* 若要配置 SendGrid，在*Services/MessageServices.cs*中添加类似于以下的代码:
 
 [!code-csharp[](accconfirm/sample/WebApp1/Services/MessageServices.cs)]
 
 ---
 
-## <a name="enable-account-confirmation-and-password-recovery"></a>启用帐户确认和密码恢复
+## <a name="enable-account-confirmation-and-password-recovery"></a>启用帐户确认和密码重置
 
-已为帐户确认和密码恢复代码的模板。 查找`OnPostAsync`中的方法*Pages/Account/Register.cshtml.cs*。
+已为帐户确认和密码重置的模板。 查找*Pages/Account/Register.cshtml.cs*中的`OnPostAsync`方法。
 
 # <a name="aspnet-core-2xtabaspnetcore2x"></a>[ASP.NET Core 2.x](#tab/aspnetcore2x/)
 
-可防止新注册的用户自动登录通过注释掉以下行：
+可防通过注释掉一下代码来阻止新注册用户自动登录：
 
 ```csharp
 await _signInManager.SignInAsync(user, isPersistent: false);
 ```
 
-突出显示的已更改行还会显示完整的方法：
+突出显示的代码展现了完整的使用方法：
 
 [!code-csharp[](accconfirm/sample/WebPWrecover/Pages/Account/Register.cshtml.cs?highlight=16&name=snippet_Register)]
 
 # <a name="aspnet-core-1xtabaspnetcore1x"></a>[ASP.NET Core 1.x](#tab/aspnetcore1x/)
 
-若要启用帐户确认后，取消注释以下代码：
+若要启用帐户确认，取消以下代码的注释：
 
 [!code-csharp[](accconfirm/sample/WebApp1/Controllers/AccountController.cs?highlight=16-25&name=snippet_Register)]
 
-**注意：** 代码将阻止新注册的用户自动登录通过注释掉以下行：
+**注意：** 可防通过注释掉一下代码来阻止新注册用户自动登录：
 
 ```csharp
 //await _signInManager.SignInAsync(user, isPersistent: false);
 ```
 
-通过对取消注释中的代码中启用密码恢复`ForgotPassword`操作*controllers/Accountcontroller.cs*:
+取消*controllers/Accountcontroller.cs*中一下代码的注释来启用 `ForgotPassword（密码重置）`功能
 
 [!code-csharp[](accconfirm/sample/WebApp1/Controllers/AccountController.cs?highlight=17-23&name=snippet_ForgotPassword)]
 
-取消注释中的窗体元素*Views/Account/ForgotPassword.cshtml*。 你可能想要删除`<p> For more information on how to enable reset password ... </p>`元素，它包含此文章的链接。
+取消*Views/Account/ForgotPassword.cshtml*中窗体元素的注释。 你可能需要删除`<p> For more information on how to enable reset password ... </p>`元素，它包含此文章的链接。
 
 [!code-cshtml[](accconfirm/sample/WebApp1/Views/Account/ForgotPassword.cshtml?highlight=7-10,12,28)]
 
